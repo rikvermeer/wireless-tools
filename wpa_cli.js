@@ -36,7 +36,7 @@ var wpa_cli = module.exports = {
     bssid: bssid,
     reassociate: reassociate,
     set: set,
-    list_networks: list_networs,
+    list_networks: list_networks,
     add_network: add_network,
     set_network: set_network,
     enable_network: enable_network,
@@ -181,6 +181,11 @@ function parse_command_interface(callback) {
 }
 
 /**
+ bssid / frequency / signal level / flags / ssid
+ 08:ed:b9:0b:a7:b8	2412	-47	[WPA2-PSK-CCMP+TKIP][ESS]	HeetSpeet
+**/
+
+/**
  * Parses the results of a scan_result request.
  *
  * @private
@@ -253,15 +258,15 @@ function parse_list_networks(block) {
             parsed.id = parseInt(match[1]);
         }
 
-        if ((match = entry.match(/\t([^\t]{1,32}(?=\n))/))) {
+        if ((match = entry.match(/\t([^\t]{1,32})\t/))) {
             parsed.ssid = match[1];
         }
 
-        if ((match = entry.match(/([A-Fa-f0-9:]{17})\t/))) {
+        if ((match = entry.match(/\t([A-Fa-f0-9:]{17}|any)\t/))) {
             parsed.bssid = match[1].toLowerCase();
         }
 
-        if ((match = entry.match(/\t(\[.+\])\t/))) {
+        if ((match = entry.match(/\t(\[.+\])(?=\n)/))) {
             parsed.flags = match[1];
         }
 
