@@ -36,6 +36,7 @@ var wpa_cli = module.exports = {
     bssid: bssid,
     reassociate: reassociate,
     set: set,
+    list_networks: list_networs,
     add_network: add_network,
     set_network: set_network,
     enable_network: enable_network,
@@ -192,7 +193,7 @@ function parse_scan_results(block) {
     var match;
     var results = [];
     var lines;
-    
+
     lines = block.split('\n').map(function(item) { return item + "\n"; });
     lines.forEach(function(entry){
         var parsed = {};
@@ -225,6 +226,54 @@ function parse_scan_results(block) {
 }
 
 /**
+network id / ssid / bssid / flags
+0	mhone-config	any	[DISABLED]
+1	mhone-rpi	any	[DISABLED]
+2	HeetSpeet	any	[CURRENT]
+**/
+
+/**
+ * Parses the results of a scan_result request.
+ *
+ * @private
+ * @static
+ * @category wpa_cli
+ * @param {string} block The section of stdout for the interface.
+ * @returns {object} The parsed scan results.
+ */
+function parse_list_networks(block) {
+    var match;
+    var results = [];
+    var lines;
+
+    lines = block.split('\n').map(function(item) { return item + "\n"; });
+    lines.forEach(function(entry){
+        var parsed = {};
+        if ((match = entry.match(/([0-9]*)\t/))) {
+            parsed.id = parseInt(match[1]);
+        }
+
+        if ((match = entry.match(/\t([^\t]{1,32}(?=\n))/))) {
+            parsed.ssid = match[1];
+        }
+
+        if ((match = entry.match(/([A-Fa-f0-9:]{17})\t/))) {
+            parsed.bssid = match[1].toLowerCase();
+        }
+
+        if ((match = entry.match(/\t(\[.+\])\t/))) {
+            parsed.flags = match[1];
+        }
+
+        if(!(Object.keys(parsed).length === 0 && parsed.constructor === Object)){
+            results.push(parsed);
+        }
+    });
+
+    return results;
+}
+
+/**
  * Parses the status for a scan_results request.
  *
  * @private
@@ -239,6 +288,25 @@ function parse_scan_results_interface(callback) {
             callback(error);
         } else {
             callback(error, parse_scan_results(stdout.trim()));
+        }
+    };
+}
+
+/**
+ * Parses the status for a list_networks request.
+ *
+ * @private
+ * @static
+ * @category wpa_cli
+ * @param {function} callback The callback function.
+ *
+ */
+function parse_list_networks_interface(callback) {
+    return function(error, stdout, stderr) {
+        if (error) {
+            callback(error);
+        } else {
+            callback(error, parse_list_networks(stdout.trim()));
         }
     };
 }
@@ -334,6 +402,14 @@ function set(interface, variable, value, callback) {
                  value ].join(' ');
 
     return this.exec(command, parse_command_interface(callback));
+}
+
+function list_networks(interface, callback) {
+    var command = ['wpa_cli -i',
+                 interface,
+                 'list_networks' ].join(' ');
+
+    return this.exec(command, parse_list_networks_interface(callback));
 }
 
 function add_network(interface, callback) {
