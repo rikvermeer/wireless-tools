@@ -181,11 +181,6 @@ function parse_command_interface(callback) {
 }
 
 /**
- bssid / frequency / signal level / flags / ssid
- 08:ed:b9:0b:a7:b8	2412	-47	[WPA2-PSK-CCMP+TKIP][ESS]	HeetSpeet
-**/
-
-/**
  * Parses the results of a scan_result request.
  *
  * @private
@@ -258,15 +253,15 @@ function parse_list_networks(block) {
             parsed.id = parseInt(match[1]);
         }
 
-        if ((match = entry.match(/\t([^\t]{1,32})\t/))) {
+        if ((match = entry.match(/\t([^\t]{1,32}(?=\n))/))) {
             parsed.ssid = match[1];
         }
 
-        if ((match = entry.match(/\t([A-Fa-f0-9:]{17}|any)\t/))) {
+        if ((match = entry.match(/\t/([A-Fa-f0-9:]{17})\t/))) {
             parsed.bssid = match[1].toLowerCase();
         }
 
-        if ((match = entry.match(/\t(\[.+\])(?=\n)/))) {
+        if ((match = entry.match(/\t(\[.+\])\t/))) {
             parsed.flags = match[1];
         }
 
@@ -486,6 +481,14 @@ function scan_results(interface, callback) {
         'scan_results'].join(' ');
 
     return this.exec(command, parse_scan_results_interface(callback));
+}
+
+function wps(interface, callback) {
+  var command = ['wpa_cli -i',
+      interface,
+      'wps_pbc'].join(' ');
+
+  return this.exec(command, parse_command_interface(callback));
 }
 
 function save_config(interface, callback) {
